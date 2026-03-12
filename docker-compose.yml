@@ -1,0 +1,17 @@
+services:
+
+  dhw-api:
+    # DHW (Domestic Hot Water) status REST API backed by InfluxDB
+    build: .
+    container_name: dhw-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      - DHW_INFLUXDB_URL=${DHW_INFLUXDB_URL}
+      - DHW_INFLUXDB_TOKEN=${DHW_INFLUXDB_TOKEN}
+      - DHW_INFLUXDB_ORG=${DHW_INFLUXDB_ORG}
+      - DHW_INFLUXDB_BUCKET=${DHW_INFLUXDB_BUCKET}
+      - DHW_INFLUXDB_MEASUREMENT=${DHW_INFLUXDB_MEASUREMENT}
+      - DHW_INFLUXDB_TEMP_FIELD=${DHW_INFLUXDB_TEMP_FIELD}
