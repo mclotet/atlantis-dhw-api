@@ -1,10 +1,28 @@
 [build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.backends.legacy:build"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "atlantis-dhw-api"
-version = "0.1.0"
+version = "0.2.0"
 description = "REST API for domestic hot water queries against InfluxDB in the Atlantis ecosystem"
-requires-python = ">=3.9"
-dependencies = []  # requirements.txt remains authoritative for Docker builds
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.100",
+    "uvicorn[standard]",
+    "influxdb-client",
+    "atlantis-core[config] @ git+https://github.com/mclotet/atlantis-core.git#subdirectory=python",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-asyncio", "httpx", "pytest-mock"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
