@@ -14,6 +14,9 @@ REST API that exposes Domestic Hot Water (DHW) status by querying an InfluxDB in
 Requires an external InfluxDB instance reachable at `DHW_INFLUXDB_URL` with the appropriate bucket, measurement, and field already populated.
 
 ```bash
+git clone https://github.com/mclotet/atlantis-dhw-api.git
+cd atlantis-dhw-api
+git submodule update --init --recursive
 cp .env.example .env
 # Edit .env: set DHW_INFLUXDB_URL, DHW_INFLUXDB_TOKEN, DHW_INFLUXDB_ORG,
 #            DHW_INFLUXDB_BUCKET, DHW_INFLUXDB_MEASUREMENT, DHW_INFLUXDB_TEMP_FIELD
