@@ -11,3 +11,5 @@ services:
     environment:
       # Secret supplied at runtime — not in atlantis.toml
       DHW_INFLUXDB_TOKEN: ${DHW_INFLUXDB_TOKEN}
+      ATLANTIS_EDGE_NODE_ID: ${ATL_DHW_EDGE_NODE_ID}
+      LOG_FORMAT: json
