@@ -15,4 +15,5 @@ logger = logging.getLogger("atlantis")
 async def dhw_status(port: IDhwInfluxPort = Depends(get_influx_port)):
     logger.debug("Handling GET /dhw", extra={"subsystem": "api"})
     status = await dhw_service.get_dhw_status(port)
+    logger.info("GET /dhw responded", extra={"subsystem": "api", "available": status.available})
     return DhwStatusSchema.model_validate(status, from_attributes=True)

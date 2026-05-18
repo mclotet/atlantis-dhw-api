@@ -25,6 +25,7 @@ class InfluxDhwAdapter(IDhwInfluxPort):
         except DhwDomainError:
             raise
         except Exception as exc:
+            logger.error("InfluxDB query failed: %s", exc, extra={"subsystem": "storage"})
             raise InfluxQueryError(str(exc)) from exc
 
         return DhwStatus(
@@ -47,7 +48,9 @@ from(bucket: "{s.dhw_influxdb_bucket}")
         logger.debug("Querying latest DHW temperature", extra={"subsystem": "storage"})
         result = self._q.query(org=s.dhw_influxdb_org, query=query)
         if result and result[0].records:
-            return float(result[0].records[0].get_value())
+            value = float(result[0].records[0].get_value())
+            logger.info("Latest DHW temp %.1f°C", value, extra={"subsystem": "storage"})
+            return value
         logger.warning("No DHW temperature data found", extra={"subsystem": "storage"})
         return None
 
