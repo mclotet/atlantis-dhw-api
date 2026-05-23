@@ -7,10 +7,10 @@ from app.domain.models import DhwStatus, HistoricalPoint
 async def test_get_dhw_status_delegates_to_port():
     expected = DhwStatus(
         temperature=48.5,
-        minutes_left=30,
+        time_left=30,
         available=True,
         heating_dhw=False,
-        dhw_historical=[HistoricalPoint(dt=1715520060, temp=48.1)],
+        historical=[HistoricalPoint(timestamp="2024-05-12T16:01:00Z", temperature=48.1)],
     )
     port = AsyncMock()
     port.get_dhw_status.return_value = expected

@@ -7,10 +7,10 @@ from app.domain.models import DhwStatus, HistoricalPoint
 async def test_dhw_happy_path(client, mock_port):
     mock_port.get_dhw_status.return_value = DhwStatus(
         temperature=52.3,
-        minutes_left=30,
+        time_left=30,
         available=True,
         heating_dhw=True,
-        dhw_historical=[HistoricalPoint(dt=1715520000, temp=51.8)],
+        historical=[HistoricalPoint(timestamp="2024-05-12T16:00:00Z", temperature=51.8)],
     )
 
     response = await client.get("/dhw")
@@ -20,18 +20,19 @@ async def test_dhw_happy_path(client, mock_port):
     assert data["temperature"] == pytest.approx(52.3)
     assert data["available"] is True
     assert data["heating_dhw"] is True
-    assert data["minutes_left"] == 30
-    assert len(data["dhw_historical"]) == 1
-    assert data["dhw_historical"][0]["dt"] == 1715520000
+    assert data["time_left"] == 30
+    assert len(data["historical"]) == 1
+    assert data["historical"][0]["timestamp"] == "2024-05-12T16:00:00Z"
+    assert data["historical"][0]["temperature"] == pytest.approx(51.8)
 
 
 async def test_dhw_no_temperature(client, mock_port):
     mock_port.get_dhw_status.return_value = DhwStatus(
         temperature=None,
-        minutes_left=30,
+        time_left=30,
         available=False,
         heating_dhw=False,
-        dhw_historical=[],
+        historical=[],
     )
 
     response = await client.get("/dhw")

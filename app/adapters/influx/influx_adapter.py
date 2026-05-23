@@ -30,10 +30,10 @@ class InfluxDhwAdapter(IDhwInfluxPort):
 
         return DhwStatus(
             temperature=temp,
-            minutes_left=30,  # placeholder — real calculation tracked separately
+            time_left=30,  # placeholder — real calculation tracked separately
             available=temp is not None,
             heating_dhw=op_mode and valve,
-            dhw_historical=history,
+            historical=history,
         )
 
     def _query_latest_temp(self) -> float | None:
@@ -102,7 +102,7 @@ from(bucket: "{s.dhw_influxdb_bucket}")
         for table in result:
             for record in table.records:
                 points.append(HistoricalPoint(
-                    dt=int(record.get_time().timestamp()),
-                    temp=float(record.get_value()),
+                    timestamp=record.get_time().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    temperature=float(record.get_value()),
                 ))
         return points
