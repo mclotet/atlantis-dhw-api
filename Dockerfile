@@ -1,11 +1,14 @@
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
+# Install atlantis-core from the submodule (same pattern as atlantis-forge)
+COPY libs/atlantis-core/python /tmp/atlantis-core
+RUN pip install --no-cache-dir /tmp/atlantis-core[config]
 
-RUN pip install --no-cache-dir -r requirements.txt
+# Install the dhw-api package and its remaining dependencies
+COPY pyproject.toml atlantis.toml ./
+COPY app/ ./app/
+RUN pip install --no-cache-dir .
 
-COPY . .
-
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.adapters.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

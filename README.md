@@ -9,11 +9,55 @@ REST API that exposes Domestic Hot Water (DHW) status by querying an InfluxDB in
 | `GET` | `/dhw` | Returns current DHW status and historical temperatures |
 | `GET` | `/health` | Health check — returns `{"status": "ok"}` |
 
+### `GET /dhw`
+
+Returns the current DHW tank status and the last 30 minutes of historical temperatures.
+
+**Response — `200 OK`:**
+
+```json
+{
+  "temperature": 52.3,
+  "time_left": 30,
+  "available": true,
+  "heating_dhw": true,
+  "historical": [
+    {
+      "timestamp": "2026-05-24T10:15:00Z",
+      "temperature": 52.1
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `temperature` | `float \| null` | Current DHW tank temperature (°C). `null` if no reading in the last 5 min. |
+| `time_left` | `int` | Estimated time until DHW is ready (minutes). Placeholder — always 30 for now. |
+| `available` | `bool` | `true` when a current temperature reading exists. |
+| `heating_dhw` | `bool` | `true` when operation mode is `Heating` and the 3-way valve is in DHW position. |
+| `historical[].timestamp` | `string` | ISO 8601 UTC timestamp of the 1-minute aggregate bucket. |
+| `historical[].temperature` | `float` | Mean DHW tank temperature over the 1-minute bucket (°C). |
+
+**Error responses:**
+
+| Status | Error | Cause |
+|---|---|---|
+| `502` | `InfluxQueryError` | InfluxDB returned an error or malformed response |
+| `503` | `InfluxUnavailable` | InfluxDB client is not initialised |
+
+### `GET /health`
+
+Returns `{"status": "ok"}` with HTTP 200 when the service is running.
+
 ## Standalone usage
 
 Requires an external InfluxDB instance reachable at `DHW_INFLUXDB_URL` with the appropriate bucket, measurement, and field already populated.
 
 ```bash
+git clone https://github.com/mclotet/atlantis-dhw-api.git
+cd atlantis-dhw-api
+git submodule update --init --recursive
 cp .env.example .env
 # Edit .env: set DHW_INFLUXDB_URL, DHW_INFLUXDB_TOKEN, DHW_INFLUXDB_ORG,
 #            DHW_INFLUXDB_BUCKET, DHW_INFLUXDB_MEASUREMENT, DHW_INFLUXDB_TEMP_FIELD
