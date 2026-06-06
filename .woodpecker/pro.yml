@@ -1,0 +1,40 @@
+# =============================================================================
+# Woodpecker CI — atlantis-dhw-api (the service's OWN repo) — PRO instance
+#
+# CI ONLY: build + test the service where its code lives. Deployment into the
+# live stack is handled separately by atlantis-controller's pipeline (CD), since
+# that needs the stack compose file + submodule pointer. This file is selected
+# by the PRO Woodpecker instance via Project Settings -> pipeline path.
+# (.woodpecker/itg.yml is the identical ITG counterpart; CI is env-agnostic, the
+# split is kept only for model uniformity across all repos.)
+#
+# Triggers: push (CI feedback where the code lives) + cron + manual.
+# =============================================================================
+
+when:
+  - event: [push, cron, manual]
+
+steps:
+  # Unit tests. dhw-api imports atlantis_core, which lives in the
+  # libs/atlantis-core submodule (NOT a pyproject dependency) — install it first,
+  # mirroring the Dockerfile, then dhw-api with its dev/test extras.
+  test:
+    image: python:3.12-slim
+    commands:
+      - apt-get update -qq && apt-get install -y -qq git >/dev/null
+      - git submodule update --init --recursive libs/atlantis-core
+      - pip install --quiet --no-cache-dir ./libs/atlantis-core/python[config]
+      - pip install --quiet --no-cache-dir .[dev]
+      - pytest -q
+
+  # Confirm the production image still builds (catches Dockerfile/dep breakage).
+  # The Dockerfile COPYs libs/atlantis-core/python, so the submodule must be
+  # present. Uses the host docker socket; no volume mounts needed.
+  build:
+    image: docker:27-cli
+    commands:
+      - apk add --no-cache git
+      - git submodule update --init --recursive libs/atlantis-core
+      - docker build -t atlantis-dhw-api:ci .
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
