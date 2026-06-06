@@ -19,7 +19,7 @@ when:
 # whole run before any step executes. So override the clone to NOT recurse, then
 # fetch the submodule ourselves (next step) with a PAT that can read atlantis-core.
 clone:
-  git:
+  - name: git
     image: woodpeckerci/plugin-git
     settings:
       recursive: false
