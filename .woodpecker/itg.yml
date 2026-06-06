@@ -14,22 +14,26 @@
 when:
   - event: [push, cron, manual]
 
-# Override the implicit clone so submodules (libs/atlantis-core, a PRIVATE repo)
-# are fetched WITH the Woodpecker-provided netrc credentials. A manual
-# `git submodule update` in a normal step has no creds and fails with
-# "could not read Username for https://github.com". .gitmodules already uses
-# https URLs, so the clone plugin reuses the token.
-clone:
-  git:
-    image: woodpeckerci/plugin-git
-    settings:
-      recursive: true
-
+# The implicit clone fetches dhw-api itself fine, but it CANNOT clone the private
+# atlantis-core submodule: Woodpecker's OAuth token is scoped to this repo, not
+# atlantis-core. So we disable the built-in submodule recursion and fetch the
+# submodule ourselves in a dedicated step using a PAT (github_token secret) that
+# has read access to atlantis-core. The PAT is injected via url.insteadOf so it
+# never appears in .gitmodules or logs.
 steps:
+  submodules:
+    image: alpine/git
+    environment:
+      GITHUB_TOKEN:
+        from_secret: github_token   # read-only PAT with access to atlantis-core
+    commands:
+      - git config --global url."https://$${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+      - git submodule update --init --recursive
+      - git config --global --unset url."https://$${GITHUB_TOKEN}@github.com/".insteadOf || true
+
   # Unit tests. dhw-api imports atlantis_core from the libs/atlantis-core
-  # submodule (NOT a pyproject dependency) — install it first (mirroring the
-  # Dockerfile), then dhw-api with its dev/test extras. Submodule is already
-  # present from the recursive clone above.
+  # submodule (now present), installed first (mirroring the Dockerfile), then
+  # dhw-api with its dev/test extras.
   test:
     image: python:3.12-slim
     commands:
@@ -38,7 +42,7 @@ steps:
       - pytest -q
 
   # Confirm the production image still builds (catches Dockerfile/dep breakage).
-  # The Dockerfile COPYs libs/atlantis-core/python (present from recursive clone).
+  # The Dockerfile COPYs libs/atlantis-core/python (present from the step above).
   build:
     image: docker:27-cli
     commands:
