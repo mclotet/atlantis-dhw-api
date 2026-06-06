@@ -54,7 +54,10 @@ steps:
     commands:
       - pip install --quiet --no-cache-dir ./libs/atlantis-core/python[config]
       - pip install --quiet --no-cache-dir .[dev]
-      - pytest -q
+      # Scope to dhw-api's OWN tests — bare pytest also collects the vendored
+      # atlantis-core submodule's tests (libs/atlantis-core/python/tests), whose
+      # module names collide with dhw-api's tests/ ("import file mismatch").
+      - pytest -q tests
 
   # Confirm the production image still builds (catches Dockerfile/dep breakage).
   # The Dockerfile COPYs libs/atlantis-core/python (present from the step above).
