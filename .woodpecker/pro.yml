@@ -14,12 +14,16 @@
 when:
   - event: [push, cron, manual]
 
-# The implicit clone fetches dhw-api itself fine, but it CANNOT clone the private
-# atlantis-core submodule: Woodpecker's OAuth token is scoped to this repo, not
-# atlantis-core. So we disable the built-in submodule recursion and fetch the
-# submodule ourselves in a dedicated step using a PAT (github_token secret) that
-# has read access to atlantis-core. The PAT is injected via url.insteadOf so it
-# never appears in .gitmodules or logs.
+# The DEFAULT clone recurses submodules with the repo-scoped OAuth token, which
+# CANNOT read the cross-repo private atlantis-core submodule — it aborts the
+# whole run before any step executes. So override the clone to NOT recurse, then
+# fetch the submodule ourselves (next step) with a PAT that can read atlantis-core.
+clone:
+  git:
+    image: woodpeckerci/plugin-git
+    settings:
+      recursive: false
+
 steps:
   submodules:
     image: alpine/git
