@@ -25,23 +25,26 @@ clone:
       recursive: false
 
 steps:
+  # Plain alpine (shell entrypoint) + apk git — avoids alpine/git's `git`
+  # entrypoint, which would need an entrypoint override that breaks Woodpecker's
+  # command injection (/bin/sh: -c requires an argument).
   submodules:
-    image: alpine/git
-    entrypoint: [/bin/sh, -c]   # alpine/git's default entrypoint is `git`; override it
+    image: alpine:3.20
     environment:
       SUBMODULE_TOKEN:
         from_secret: submodule_token   # read-only PAT with access to atlantis-core
     commands:
+      - apk add --no-cache git
       - |
         if [ -z "$${SUBMODULE_TOKEN}" ]; then
           echo "ERROR: submodule_token secret is empty/unset — create it in Woodpecker"
           echo "       (repo or org secret 'submodule_token', events push+cron+manual)."
           exit 1
         fi
-        echo "submodule_token present (len: $${#SUBMODULE_TOKEN})"
-        git config --global url."https://x-access-token:$${SUBMODULE_TOKEN}@github.com/".insteadOf "https://github.com/"
-        git submodule update --init --recursive
-        echo "submodule fetched OK"
+      - echo "submodule_token present (len:$${#SUBMODULE_TOKEN})"
+      - git config --global url."https://x-access-token:$${SUBMODULE_TOKEN}@github.com/".insteadOf "https://github.com/"
+      - git submodule update --init --recursive
+      - echo "submodule fetched OK"
 
   # Unit tests. dhw-api imports atlantis_core from the libs/atlantis-core
   # submodule (now present), installed first (mirroring the Dockerfile), then
