@@ -23,13 +23,21 @@ when:
 steps:
   submodules:
     image: alpine/git
+    entrypoint: [/bin/sh, -c]   # alpine/git's default entrypoint is `git`; override it
     environment:
-      GITHUB_TOKEN:
-        from_secret: github_token   # read-only PAT with access to atlantis-core
+      SUBMODULE_TOKEN:
+        from_secret: submodule_token   # read-only PAT with access to atlantis-core
     commands:
-      - git config --global url."https://$${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
-      - git submodule update --init --recursive
-      - git config --global --unset url."https://$${GITHUB_TOKEN}@github.com/".insteadOf || true
+      - |
+        if [ -z "$${SUBMODULE_TOKEN}" ]; then
+          echo "ERROR: submodule_token secret is empty/unset — create it in Woodpecker"
+          echo "       (repo or org secret 'submodule_token', events push+cron+manual)."
+          exit 1
+        fi
+        echo "submodule_token present (len: $${#SUBMODULE_TOKEN})"
+        git config --global url."https://x-access-token:$${SUBMODULE_TOKEN}@github.com/".insteadOf "https://github.com/"
+        git submodule update --init --recursive
+        echo "submodule fetched OK"
 
   # Unit tests. dhw-api imports atlantis_core from the libs/atlantis-core
   # submodule (now present), installed first (mirroring the Dockerfile), then
