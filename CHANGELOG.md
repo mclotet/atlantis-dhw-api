@@ -6,6 +6,9 @@ Categories: Added | Changed | Deprecated | Removed | Fixed | Security
 
 ## [Unreleased]
 
+### Added
+- Woodpecker CI pipeline (`.woodpecker/{itg,pro}.yml`): submodule fetch, scoped pytest suite, Docker build
+
 ## [0.1.0] - 2026-03-12
 
 ### Added
