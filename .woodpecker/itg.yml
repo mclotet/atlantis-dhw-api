@@ -46,14 +46,17 @@ steps:
       - git submodule update --init --recursive
       - echo "submodule fetched OK"
 
-  # Install atlantis-core and the service with dev extras, then run the test suite.
-  # Scoped to `tests/` (not bare pytest) to avoid collecting the vendored
-  # libs/atlantis-core/python/tests/ submodule, whose module names collide.
+  # Unit tests. dhw-api imports atlantis_core from the libs/atlantis-core
+  # submodule (now present), installed first (mirroring the Dockerfile), then
+  # dhw-api with its dev/test extras.
   test:
     image: python:3.12-slim
     commands:
-      - pip install --quiet --no-cache-dir "./libs/atlantis-core/python[config]"
-      - pip install --quiet --no-cache-dir ".[dev]"
+      - pip install --quiet --no-cache-dir ./libs/atlantis-core/python[config]
+      - pip install --quiet --no-cache-dir .[dev]
+      # Scope to dhw-api's OWN tests — bare pytest also collects the vendored
+      # atlantis-core submodule's tests (libs/atlantis-core/python/tests), whose
+      # module names collide with dhw-api's tests/ ("import file mismatch").
       - pytest -q tests
 
   # Confirm the production image still builds (catches Dockerfile/dep breakage).
