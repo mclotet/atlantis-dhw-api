@@ -2,6 +2,19 @@
 
 REST API that exposes Domestic Hot Water (DHW) status by querying an InfluxDB instance. Returns current tank temperature, heating state, availability, and 30-minute historical temperatures.
 
+## Architecture
+
+```text
+atlantis-altherma (ESP32)
+    → MQTT → Telegraf → InfluxDB
+                                  ↑
+                            atlantis-dhw-api (FastAPI)
+                                  ↓
+                            REST consumers (HA, Grafana, etc.)
+```
+
+A stateless, read-only FastAPI service. It queries InfluxDB directly on every request — there is no caching layer and no persistent state of its own. Built on `atlantis-core` (git submodule) for `BaseServiceSettings` configuration and `AtlantisLogger` structured logging.
+
 ## Endpoints
 
 | Method | Path | Description |
