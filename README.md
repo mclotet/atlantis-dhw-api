@@ -15,6 +15,21 @@ atlantis-altherma (ESP32)
 
 A stateless, read-only FastAPI service. It queries InfluxDB directly on every request — there is no caching layer and no persistent state of its own. Built on `atlantis-core` (git submodule) for `BaseServiceSettings` configuration and `AtlantisLogger` structured logging.
 
+## Key files
+
+| File | Responsibility |
+| --- | --- |
+| `app/config.py` | Service settings — InfluxDB connection and field mapping, extends `BaseServiceSettings` |
+| `app/domain/models.py` | Domain data classes — `DhwStatus`, `HistoricalPoint` |
+| `app/domain/exceptions.py` | Domain error types (`InfluxUnavailable`, `InfluxQueryError`) mapped to HTTP status codes |
+| `app/ports/influx_port.py` | `IDhwInfluxPort` — abstract port the application layer depends on |
+| `app/application/dhw_service.py` | Use-case orchestration — retrieves DHW status via the injected port |
+| `app/adapters/influx/influx_adapter.py` | InfluxDB adapter implementing `IDhwInfluxPort`; runs the Flux queries |
+| `app/adapters/api/main.py` | FastAPI app factory, lifespan (settings/logger/InfluxDB client startup), exception handler |
+| `app/adapters/api/deps.py` | FastAPI dependency wiring — builds `InfluxDhwAdapter` from app state |
+| `app/adapters/api/routers/dhw.py` | `/dhw` route handler |
+| `app/adapters/api/schemas.py` | Pydantic response schemas |
+
 ## Endpoints
 
 | Method | Path | Description |
