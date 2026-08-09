@@ -103,9 +103,9 @@ These are the variables the service itself reads at runtime (as defined in `.env
 | `DHW_INFLUXDB_URL` | URL of the InfluxDB instance | `http://localhost:8086` |
 | `DHW_INFLUXDB_TOKEN` | InfluxDB API token with read access to the bucket | `my-token` |
 | `DHW_INFLUXDB_ORG` | InfluxDB organisation name | `atlantis` |
-| `DHW_INFLUXDB_BUCKET` | InfluxDB bucket containing DHW data | `atlantis-pro` |
-| `DHW_INFLUXDB_MEASUREMENT` | InfluxDB measurement name | `altherma` |
-| `DHW_INFLUXDB_TEMP_FIELD` | InfluxDB field name for DHW tank temperature | `DHW_tank_temp_(R5T)` |
+| `DHW_INFLUXDB_BUCKET` | InfluxDB bucket containing DHW data | `atlantis-telemetry` |
+| `DHW_INFLUXDB_MEASUREMENT` | InfluxDB measurement name | `altherma_water_temps` |
+| `DHW_INFLUXDB_TEMP_FIELD` | InfluxDB field name for DHW tank temperature | `dhw` |
 
 ## Deployment via atlantis-controller
 
