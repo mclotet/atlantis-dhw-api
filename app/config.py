@@ -14,9 +14,9 @@ class Settings(BaseServiceSettings):
     dhw_influxdb_token: str
 
     # Service-specific optional fields with sensible Python defaults
-    dhw_influxdb_bucket: str = "altherma"
-    dhw_influxdb_measurement: str = "altherma"
-    dhw_influxdb_temp_field: str = "DHW_tank_temp_(R5T)"
+    dhw_influxdb_bucket: str = "atlantis-telemetry"
+    dhw_influxdb_measurement: str = "altherma_water_temps"
+    dhw_influxdb_temp_field: str = "dhw"
     dhw_influxdb_op_mode_field: str = "Operation_Mode"
     dhw_influxdb_valve_field: str = "3way_valve(On:DHW_Off:Space)"
 
