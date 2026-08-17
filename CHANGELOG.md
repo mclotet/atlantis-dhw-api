@@ -9,6 +9,11 @@ Categories: Added | Changed | Deprecated | Removed | Fixed | Security
 ### Added
 - Woodpecker CI pipeline (`.woodpecker/{itg,pro}.yml`): submodule fetch, scoped pytest suite, Docker build
 
+### Changed
+- (PLAT-242) `atlantis.toml`'s `atl_group_id`: `"basement"` -> `"global"`; `.env.example`'s
+  `ATL_DHW_EDGE_NODE_ID`: `rack` -> `infra`. dhw-api is a containerised platform service tied
+  to no floor, not the basement it inherited from the heat pump it reads (identity.md §4/§7).
+
 ## [0.1.0] - 2026-03-12
 
 ### Added

@@ -3,7 +3,7 @@
 
 atl_service_name = "dhw-api"
 atl_device_id    = "dhw-api"
-atl_group_id     = "basement"
+atl_group_id     = "global"
 atl_env          = "pro"
 atl_log_level    = "WARNING"
 
