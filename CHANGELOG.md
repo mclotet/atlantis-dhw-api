@@ -6,6 +6,9 @@ Categories: Added | Changed | Deprecated | Removed | Fixed | Security
 
 ## [Unreleased]
 
+### Added
+- Compose `healthcheck` on `GET /health` (urllib probe, python:3.12-slim has no curl) in the standalone `docker-compose.yml` (PLAT-312).
+
 ### Changed
 - Re-pin `libs/atlantis-core` submodule from `929aa84` to `32c4425` (CTRL-033), catching up 81
   commits behind `origin/main`. Covers CORE-048 (Python MQTT topic/payload builders aligned
