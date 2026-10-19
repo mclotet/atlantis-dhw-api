@@ -10,6 +10,9 @@ Categories: Added | Changed | Deprecated | Removed | Fixed | Security
 - Compose `healthcheck` on `GET /health` (urllib probe, python:3.12-slim has no curl) in the standalone `docker-compose.yml` (PLAT-312).
 
 ### Changed
+- `heating_dhw` now reads the Altherma `heatpump` state (`altherma_states`, field `state`, tag `sensor_id`, bucket `atlantis-states`, last 24 h) and is true when it is `DHW`. The old query read `Operation_Mode` / `3way_valve(...)` fields that no pipeline stage writes, so it was always false (PLAT-300). Replaces `DHW_INFLUXDB_OP_MODE_FIELD` / `DHW_INFLUXDB_VALVE_FIELD` with `DHW_INFLUXDB_STATES_BUCKET`, `DHW_INFLUXDB_STATES_MEASUREMENT`, `DHW_HEATING_SENSOR_ID`, `DHW_HEATING_STATE`. The token must be able to read `atlantis-states`.
+- README: env table with defaults, controller forwarding, token and error tables corrected (PLAT-309).
+- Re-pin `libs/atlantis-core` to `165d6c8` (Python logging follows the logging standard, CORE-178). The service uses only `AtlantisLogger.configure`, tests unchanged.
 - Re-pin `libs/atlantis-core` submodule from `929aa84` to `32c4425` (CTRL-033), catching up 81
   commits behind `origin/main`. Covers CORE-048 (Python MQTT topic/payload builders aligned
   byte-for-byte with C++/MQTT-standard: flat `build_state` JSON, camelCase `build_log` OTel

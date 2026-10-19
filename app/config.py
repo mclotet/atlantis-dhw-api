@@ -17,8 +17,15 @@ class Settings(BaseServiceSettings):
     dhw_influxdb_bucket: str = "atlantis-telemetry"
     dhw_influxdb_measurement: str = "altherma_water_temps"
     dhw_influxdb_temp_field: str = "dhw"
-    dhw_influxdb_op_mode_field: str = "Operation_Mode"
-    dhw_influxdb_valve_field: str = "3way_valve(On:DHW_Off:Space)"
+
+    # Heating state: altherma publishes the heat pump mode as a retained scalar state
+    # (atlantis/<group>/state/altherma/<device>/heatpump/status), which Telegraf writes to
+    # altherma_states (field "state", tag sensor_id) in the states bucket. The 3-way valve
+    # has no sensor of its own: the valve bit in reg 0x60 sets the mode to "DHW".
+    dhw_influxdb_states_bucket: str = "atlantis-states"
+    dhw_influxdb_states_measurement: str = "altherma_states"
+    dhw_heating_sensor_id: str = "heatpump"
+    dhw_heating_state: str = "DHW"
 
 
 def get_settings() -> "Settings":
