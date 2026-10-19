@@ -63,7 +63,7 @@ Returns the current DHW tank status and the last 30 minutes of historical temper
 | `temperature` | `float \| null` | Current DHW tank temperature (°C). `null` if no reading in the last 5 min. |
 | `time_left` | `int` | Estimated time until DHW is ready (minutes). Placeholder — always 30 for now. |
 | `available` | `bool` | `true` when a current temperature reading exists. |
-| `heating_dhw` | `bool` | `true` when operation mode is `Heating` and the 3-way valve is in DHW position. |
+| `heating_dhw` | `bool` | `true` when the latest `heatpump` state of the Altherma (last 24 h, `altherma_states` in the states bucket) is `DHW`, i.e. the 3-way valve is in the DHW position. `false` for any other mode or when no state is found. |
 | `historical[].timestamp` | `string` | ISO 8601 UTC timestamp of the 1-minute aggregate bucket. |
 | `historical[].temperature` | `float` | Mean DHW tank temperature over the 1-minute bucket (°C). |
 
@@ -71,8 +71,10 @@ Returns the current DHW tank status and the last 30 minutes of historical temper
 
 | Status | Error | Cause |
 |---|---|---|
-| `502` | `InfluxQueryError` | InfluxDB returned an error or malformed response |
-| `503` | `InfluxUnavailable` | InfluxDB client is not initialised |
+| `502` | `InfluxQueryError` | Any InfluxDB query or connection failure (error, timeout, connection refused) |
+| `503` | `InfluxUnavailable` | Reserved — defined but not currently raised |
+
+Error body: `{"error": "<ExceptionName>", "detail": "<message>"}`.
 
 ### `GET /health`
 
@@ -87,8 +89,8 @@ git clone https://github.com/mclotet/atlantis-dhw-api.git
 cd atlantis-dhw-api
 git submodule update --init --recursive
 cp .env.example .env
-# Edit .env: set DHW_INFLUXDB_URL, DHW_INFLUXDB_TOKEN, DHW_INFLUXDB_ORG,
-#            DHW_INFLUXDB_BUCKET, DHW_INFLUXDB_MEASUREMENT, DHW_INFLUXDB_TEMP_FIELD
+# Edit .env: set DHW_INFLUXDB_TOKEN and ATL_DHW_EDGE_NODE_ID; override DHW_INFLUXDB_URL
+#            (the atlantis.toml default points at the compose hostname `influxdb`)
 docker compose up
 ```
 
@@ -96,16 +98,23 @@ The API will be available at `http://localhost:8000`.
 
 ## Environment variables
 
-These are the variables the service itself reads at runtime (as defined in `.env.example`):
+These are the variables the service itself reads at runtime. Required ones have no default; the rest default from `atlantis.toml` or `app/config.py`.
 
-| Variable | Description | Example |
+| Variable | Description | Default |
 | --- | --- | --- |
-| `DHW_INFLUXDB_URL` | URL of the InfluxDB instance | `http://localhost:8086` |
-| `DHW_INFLUXDB_TOKEN` | InfluxDB API token with read access to the bucket | `my-token` |
-| `DHW_INFLUXDB_ORG` | InfluxDB organisation name | `atlantis` |
-| `DHW_INFLUXDB_BUCKET` | InfluxDB bucket containing DHW data | `atlantis-telemetry` |
-| `DHW_INFLUXDB_MEASUREMENT` | InfluxDB measurement name | `altherma_water_temps` |
-| `DHW_INFLUXDB_TEMP_FIELD` | InfluxDB field name for DHW tank temperature | `dhw` |
+| `DHW_INFLUXDB_URL` | URL of the InfluxDB instance (required; override for standalone runs) | `http://influxdb:8086` (`atlantis.toml`) |
+| `DHW_INFLUXDB_TOKEN` | InfluxDB API token with read access to the telemetry and states buckets (required, secret) | — |
+| `DHW_INFLUXDB_ORG` | InfluxDB organisation name | `atlantis` (`atlantis.toml`) |
+| `DHW_INFLUXDB_BUCKET` | Bucket containing DHW temperatures | `atlantis-telemetry` |
+| `DHW_INFLUXDB_MEASUREMENT` | Measurement of the DHW temperature | `altherma_water_temps` |
+| `DHW_INFLUXDB_TEMP_FIELD` | Field of the DHW tank temperature | `dhw` |
+| `DHW_INFLUXDB_STATES_BUCKET` | Bucket containing Altherma states | `atlantis-states` |
+| `DHW_INFLUXDB_STATES_MEASUREMENT` | Measurement of the Altherma states | `altherma_states` |
+| `DHW_HEATING_SENSOR_ID` | `sensor_id` tag whose state decides `heating_dhw` | `heatpump` |
+| `DHW_HEATING_STATE` | State value that means "heating DHW" | `DHW` |
+| `ATL_*` | Identity and logging (`ATL_ENV`, `ATL_LOG_LEVEL`, ...), inherited from `atlantis-core` `BaseServiceSettings` | `atlantis.toml` |
+| `ATL_DHW_EDGE_NODE_ID` | Compose-only: becomes `ATLANTIS_EDGE_NODE_ID` inside the container | `infra` |
+| `LOG_FORMAT` | `json` (default) or `human` | `json` |
 
 ## Deployment via atlantis-controller
 
@@ -113,22 +122,19 @@ When deployed as part of [atlantis-controller](https://github.com/mclotet/atlant
 
 ### How variables are set in atlantis-controller
 
-The controller passes variables to this service in two ways:
+The controller's `docker-compose.yml` has no `env_file` for this service: only the variables listed in its `environment:` block reach the container.
 
-1. **`env_file: .env`** — the controller's `.env` is loaded directly into the container. This means every variable in the controller's `.env` is available inside the container.
-2. **`environment` block** — the relevant `DHW_*` variables are also explicitly listed to make the dependency clear.
-
-Because the controller's `.env` is loaded directly, the variable names are **identical** between the controller `.env` and the container:
-
-| Controller `.env` variable | Passed to container as |
+| Controller variable | Passed to container as |
 | --- | --- |
 | `DHW_INFLUXDB_URL` | `DHW_INFLUXDB_URL` |
-| `DHW_INFLUXDB_TOKEN` | `DHW_INFLUXDB_TOKEN` |
-| `DHW_INFLUXDB_ORG` | `DHW_INFLUXDB_ORG` |
 | `DHW_INFLUXDB_BUCKET` | `DHW_INFLUXDB_BUCKET` |
 | `DHW_INFLUXDB_MEASUREMENT` | `DHW_INFLUXDB_MEASUREMENT` |
 | `DHW_INFLUXDB_TEMP_FIELD` | `DHW_INFLUXDB_TEMP_FIELD` |
+| `ATL_DHW_EDGE_NODE_ID` | `ATLANTIS_EDGE_NODE_ID` |
+| `ATL_DHW_ENV` | `ATL_ENV` |
 
-> **Note:** The `DHW_INFLUXDB_TOKEN` is generated by the `influxdb2-provisioner` sidecar on first boot. Copy the token printed in the provisioner logs into the controller's `.env` before starting `dhw-api`.
+`DHW_INFLUXDB_ORG` is not forwarded: the container uses the `atlantis.toml` default. The states settings (`DHW_INFLUXDB_STATES_*`, `DHW_HEATING_*`) are not forwarded either and use their defaults.
 
-Edit the `DHW_*` section in the controller's `.env` — not in this repo.
+> **Note:** The `DHW_INFLUXDB_TOKEN` is created by the `influxdb2-provisioner` sidecar, but stored in Infisical (`/docker`, key `DHW_INFLUXDB_TOKEN`). It reaches the container as the Docker secret `dhw-influxdb-token`; it is not set in the controller's `.env.static`. The token needs read access to both `atlantis-telemetry` and `atlantis-states`.
+
+Edit the `DHW_*` section in the controller's `.env.static` — not in this repo.

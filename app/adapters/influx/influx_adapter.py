@@ -17,7 +17,7 @@ class InfluxDhwAdapter(IDhwInfluxPort):
 
     async def get_dhw_status(self) -> DhwStatus:
         try:
-            temp, (op_mode, valve), history = await asyncio.gather(
+            temp, heating, history = await asyncio.gather(
                 asyncio.to_thread(self._query_latest_temp),
                 asyncio.to_thread(self._query_heating_state),
                 asyncio.to_thread(self._query_historical),
@@ -32,7 +32,7 @@ class InfluxDhwAdapter(IDhwInfluxPort):
             temperature=temp,
             time_left=30,  # placeholder — real calculation tracked separately
             available=temp is not None,
-            heating_dhw=op_mode and valve,
+            heating_dhw=heating,
             historical=history,
         )
 
@@ -54,36 +54,26 @@ from(bucket: "{s.dhw_influxdb_bucket}")
         logger.warning("No DHW temperature data found", extra={"subsystem": "storage"})
         return None
 
-    def _query_heating_state(self) -> tuple[bool, bool]:
+    def _query_heating_state(self) -> bool:
         s = self._s
+        # States are published on change and retained, so the last record can be old:
+        # look back a day. group() merges the per-device tables so last() is the newest.
         query = f"""
-from(bucket: "{s.dhw_influxdb_bucket}")
-  |> range(start: -1h)
-  |> filter(fn: (r) => r._measurement == "{s.dhw_influxdb_measurement}")
-  |> filter(fn: (r) => r._field == "{s.dhw_influxdb_op_mode_field}" or r._field == "{s.dhw_influxdb_valve_field}")
+from(bucket: "{s.dhw_influxdb_states_bucket}")
+  |> range(start: -24h)
+  |> filter(fn: (r) => r._measurement == "{s.dhw_influxdb_states_measurement}")
+  |> filter(fn: (r) => r.sensor_id == "{s.dhw_heating_sensor_id}")
+  |> filter(fn: (r) => r._field == "state")
+  |> group()
   |> last()
 """
         logger.debug("Querying DHW heating state", extra={"subsystem": "storage"})
         result = self._q.query(org=s.dhw_influxdb_org, query=query)
 
-        operation_mode: str | None = None
-        valve_state: int | None = None
-
         for table in result:
             for record in table.records:
-                field = record.get_field()
-                value = record.get_value()
-                if field == s.dhw_influxdb_op_mode_field:
-                    operation_mode = str(value)
-                elif field == s.dhw_influxdb_valve_field:
-                    try:
-                        valve_state = int(value)
-                    except (ValueError, TypeError):
-                        valve_state = None
-
-        op_mode_active = operation_mode == "Heating"
-        valve_active = valve_state == 1
-        return op_mode_active, valve_active
+                return str(record.get_value()) == s.dhw_heating_state
+        return False
 
     def _query_historical(self) -> list[HistoricalPoint]:
         s = self._s
